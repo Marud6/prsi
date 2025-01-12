@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  client:
+    build:
+      context: ./client
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    volumes:
+      - ./client:/app
+  api_server:
+    build:
+      context: ./api_server
+      args:
+        ip: 192.168.16.107
+    ports:
+      - "3006:3006"
+    networks:
+      - app-network
+    volumes:
+      - ./api_server:/usr/src/app
+    environment:
+      - NODE_ENV=development
+
+  web_socket_server:
+    build:
+      context: ./web_socket_server
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+    volumes:
+      - ./web_socket_server:/usr/src/app
+    environment:
+      - NODE_ENV=production
+
+  db:
+    image: mysql
+    ports:
+      - "3307:3306"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+    networks:
+      - app-network
+
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "8081:80"
+    environment:
+      - PMA_HOST=db
+      - PMA_PORT=3306
+      - PMA_USER=root
+      - PMA_PASSWORD=example
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

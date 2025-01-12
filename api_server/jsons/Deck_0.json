@@ -1,0 +1,125 @@
+{
+  "deck_id": "0",
+  "cards": [
+    {
+      "id": 33,
+      "value": 3,
+      "card_photo": "cards/33_card.png"
+    },
+    {
+      "id": 83,
+      "value": 3,
+      "card_photo": "cards/83_card.png"
+    },
+    {
+      "id": 72,
+      "value": 7,
+      "card_photo": "cards/72_card.png"
+    },
+    {
+      "id": 92,
+      "value": 3,
+      "card_photo": "cards/92_card.png"
+    },
+    {
+      "id": 51,
+      "value": 3,
+      "card_photo": "cards/51_card.png"
+    },
+    {
+      "id": 24,
+      "value": 2,
+      "card_photo": "cards/24_card.png"
+    },
+    {
+      "id": 54,
+      "value": 3,
+      "card_photo": "cards/54_card.png"
+    },
+    {
+      "id": 74,
+      "value": 7,
+      "card_photo": "cards/74_card.png"
+    },
+    {
+      "id": 43,
+      "value": 3,
+      "card_photo": "cards/43_card.png"
+    },
+    {
+      "id": 94,
+      "value": 3,
+      "card_photo": "cards/94_card.png"
+    },
+    {
+      "id": 71,
+      "value": 7,
+      "card_photo": "cards/71_card.png"
+    },
+    {
+      "id": 23,
+      "value": 2,
+      "card_photo": "cards/23_card.png"
+    },
+    {
+      "id": 84,
+      "value": 3,
+      "card_photo": "cards/84_card.png"
+    },
+    {
+      "id": 42,
+      "value": 3,
+      "card_photo": "cards/42_card.png"
+    },
+    {
+      "id": 34,
+      "value": 3,
+      "card_photo": "cards/34_card.png"
+    },
+    {
+      "id": 82,
+      "value": 3,
+      "card_photo": "cards/82_card.png"
+    },
+    {
+      "id": 22,
+      "value": 2,
+      "card_photo": "cards/22_card.png"
+    },
+    {
+      "id": 12,
+      "value": 1,
+      "card_photo": "cards/12_card.png"
+    },
+    {
+      "id": 11,
+      "value": 1,
+      "card_photo": "cards/11_card.png"
+    },
+    {
+      "id": 21,
+      "value": 2,
+      "card_photo": "cards/21_card.png"
+    },
+    {
+      "id": 32,
+      "value": 3,
+      "card_photo": "cards/32_card.png"
+    },
+    {
+      "id": 41,
+      "value": 3,
+      "card_photo": "cards/41_card.png"
+    },
+    {
+      "id": 81,
+      "value": 3,
+      "card_photo": "cards/81_card.png"
+    },
+    {
+      "id": 73,
+      "value": 7,
+      "card_photo": "cards/73_card.png"
+    }
+  ]
+}
