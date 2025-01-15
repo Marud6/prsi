@@ -15,7 +15,7 @@
         users: [""],
         your_username: sessionStorage.getItem("Username"),
         counter: 0,
-        deck_id: "0",
+        deck_id: "-1",
         last_card_pl: {},
         your_turn: false,
         skip:false,
@@ -25,13 +25,10 @@
     },
     created() {
       this.socket = io("http://localhost:3000");
-      for (let i = 0; i < 4; i++) {
-        this.get_cardd()
-      }
-      this.last_card_pl={};
       this.skip=false;
     //this.get_First_cardd();
       //set last card in websocket
+
 
 
     },
@@ -52,8 +49,9 @@
           this.your_turn = false;
         }
         if(this.your_turn &&(this.last_card_pl.id===11 || this.last_card_pl.id===12 || this.last_card_pl.id===13 || this.last_card_pl.id===14 ) ){
-          console.log("you can skip your turn button")
           this.skip=true;
+        }else{
+          this.skip=false;
         }
         if(this.last_card_pl.value===7){
           console.log("you will take " + data.to_take)
@@ -61,18 +59,11 @@
             this.take_cards=true;
           }
         }
-
-
-
-
-
-
-
-
-
-
-
-
+        if(this.mycards.length===0){
+          for (let i = 0; i < 4; i++) {
+            this.get_cardd()
+          }
+        }
       });
     },
 
@@ -113,10 +104,6 @@
   },
 
 
-
-
-
-
       async handleClick(item) {
 
         //alert(`post card back to pack ${item.id}`);
@@ -125,7 +112,7 @@
           alert(`you can not play this card ${item.id}`);
         }else {
 
-          fetch("http://localhost:3006/api/post_card/0", {
+          fetch("http://localhost:3006/api/post_card/"+this.deck_id, {
             method: "POST",
             body: JSON.stringify({
               id: this.last_card_pl.id
@@ -159,7 +146,7 @@
 
 
       async get_cardd(){
-        const url = "http://localhost:3006/api/get_card/0";
+        const url = "http://localhost:3006/api/get_card/"+this.deck_id;
         try {
           const response = await fetch(url);
           if (!response.ok) {

@@ -23,16 +23,11 @@ data.player_on_turn = 404;
 data.last_played_card = {};
 data.to_take=0;
 
-
-
-
-
 function Create_User(username, status, card) {
   this.username = username;
   this.status = status;
   this.card_value = card;
 }
-
 function indexOfMax(arr) {
   let maxIndex = 0;
   for (let i = 1; i < arr.length; i++) {
@@ -43,30 +38,45 @@ function indexOfMax(arr) {
   return maxIndex;
 }
 
+async function fetchData(url) {
+  const apiUrl = 'http://api_server:3006/api/'+url;
+
+  try {
+    const response = await fetch(apiUrl);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status} ${apiUrl} `);
+
+    }
+    const data = await response.json(); // Parse the JSON response
+    return data;
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
+}
+
 
 Socket.on("connection", (socket) => {
   socket.emit("data", data);
-  socket.on("start", async () => {
+
+  async function start_game(){
     data.player_on_turn = 0;
-    console.log(data.player_on_turn);
-    data.last_played_card = {
-      id: 54,
-      value: 5,
-      card_photo: "cards/54_card.png",
-    };
-    data.deck_id = "0";
+    data.deck_id=await fetchData("create_random_pack");
+    console.log(data.deck_id);
+    data.last_played_card = await fetchData("get_card/"+data.deck_id);
+    console.log(data.last_played_card);
     console.log("starting");
     socket.emit("data", data);
     socket.broadcast.emit("data", data);
-  });
 
+
+  }
   socket.on("logout", (user) => {
     console.log("user logout");
     data.players_names.splice(data.players_names.indexOf(user), 1);
     data.players_info.splice(data.players_names.indexOf(user), 1);
     if (data.players_info.length == 0) {
-      console.log("delete lobby");
-      //data.last_played_card=undefined;
+      console.log("delete deck "+data.deck_id);
+      fetchData("delete_deck/"+data.deck_id);
       data.game_started = false;
       data.winner = 404;
     }
@@ -124,13 +134,13 @@ Socket.on("connection", (socket) => {
     let players = 0;
     for (let i = 0; i < data.players_names.length; i++) {
       let status = data.players_info[i]["status"];
-
       if (status === "Ready") {
         players++;
       }
     }
     if (players === data.players_names.length) {
       console.log("game starting...");
+      start_game();
       let count = 5;
       const countdown = setInterval(() => {
         data.counter = count; // Display in the console

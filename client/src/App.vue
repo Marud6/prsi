@@ -70,7 +70,6 @@ export default {
   methods: {
     StartGame() {
       if (this.username === "") return;
-      this.socket.emit("start");
       console.log("your user name "+this.username);
       this.socket.emit("PushUser", this.username);
       sessionStorage.setItem("Username", this.username);

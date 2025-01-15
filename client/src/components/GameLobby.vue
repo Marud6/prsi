@@ -20,7 +20,6 @@ export default {
     this.socket = io("http://localhost:3000");
   },
   mounted() {
-    this.create_pack();
     this.your_username = sessionStorage.getItem("Username");
     this.socket.on("data", (data) => {
       this.numbers = data.number;
@@ -31,20 +30,6 @@ export default {
     });
   },
   methods: {
-    async create_pack(){
-      const url = "http://localhost:3006/api/create_random_pack";
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`Response status: ${response.status}`);
-        }
-        const json = await response.json();
-        console.log("created pack: "+json);
-      } catch (error) {
-        console.error(error.message);
-      }
-
-    },
     get_ready() {
       this.user_ready = true;
 

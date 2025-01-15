@@ -75,7 +75,6 @@ async function decreaseAllCardOrders(deckId) {
     return updatedCards;
   } catch (error) {
     console.error(`Error decreasing card orders for deck ${deckId}:`, error);
-    throw error;
   }
 }
 
@@ -112,7 +111,6 @@ async function fetchAndDeleteFirstCard(deckId) {
     return firstCard.card;
   } catch (error) {
     console.error(`Error fetching and deleting the first card from deck ${deckId}:`, error);
-    throw error;
   }
 }
 
@@ -143,13 +141,8 @@ async function postCardIntoDeck(deckId, cardId) {
     return newDeckCard;
   } catch (error) {
     console.error(`Error adding card to deck ${deckId}:`, error);
-    throw error;
   }
 }
-
-
-
-
 
 async function deleteDeck(deckId) {
   try {
@@ -159,9 +152,10 @@ async function deleteDeck(deckId) {
     console.log(`Deck with ID ${deckId} deleted successfully.`);
   } catch (error) {
     console.error(`Error deleting deck with ID ${deckId}:`, error);
-    throw error;
+
   }
 }
+////
 
 
 
@@ -174,7 +168,7 @@ app.listen(port, () => console.log(`Server running on port ${port}`));
 
 app.get("/api/create_random_pack",async  (req, res) => {
  const deck_id= await createDeckWithRandomOrder();
- deck_id
+
   res.send(deck_id.toString());
 });
 
@@ -189,15 +183,16 @@ app.get("/api/delete_deck/:id", async (req, res) => {
   const response=await deleteDeck(deck_id);
   res.send("ok");
 });
-
 app.post("/api/post_card/:id", (req, res) => {
-  const cardId = req.body.id;
+  let cardId = req.body.id;
+  if(splitNumberIntoDigits(cardId)[0]===6){
+    cardId=cardId-50;
+  };
   const requestedId = parseInt(req.params.id,10);
   postCardIntoDeck(requestedId,cardId)
   res.status(200)
 
 });
-
 app.post("/api/play_card", (req, res) => {
   const card1Id = splitNumberIntoDigits(req.body.id1);
   const card2Id = splitNumberIntoDigits(req.body.id2);
