@@ -4,32 +4,166 @@ const path = require("path");
 const deck = require("./jsons/cards.json");
 const cors = require("cors");
 require("dotenv").config();
+const { PrismaClient } = require("@prisma/client");
+
+const prisma = new PrismaClient();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const mysql = require("mysql2");
+async function createDeckWithRandomOrder() {
+  try {
+    // Fetch all cards from the database
+    const cards = await prisma.card.findMany();
 
-const pool = mysql.createPool({
-  host: "db",
-  user: "root",
-  password: "example",
-  database: "your_database_name",
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+    if (cards.length !== 32) {
+      throw new Error("There must be exactly 32 cards in the database to create a deck.");
+    }
 
-function shuffle(array) {
-  let currentIndex = array.length;
-  while (currentIndex !== 0) {
-    const randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+    // Shuffle the cards to create a random order
+    const shuffledCards = cards.sort(() => Math.random() - 0.5);
+
+    // Create a new deck
+    const newDeck = await prisma.deck.create({
+      data: {
+        deckCards: {
+          create: shuffledCards.map((card, index) => ({
+            cardId: card.id,
+            order: index + 1, // Assign a unique order
+          })),
+        },
+      },
+      include: {
+        deckCards: true, // Include deckCards in the response
+      },
+    });
+
+    console.log('Deck created with ID:', newDeck.id);
+    return newDeck.id;
+  } catch (error) {
+    console.error('Error creating deck:', error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
   }
-  return array;
 }
+
+
+
+async function decreaseAllCardOrders(deckId) {
+  try {
+    // Decrease the order of all cards in the specified deck
+    const updatedCards = await prisma.deckCard.updateMany({
+      where: {
+        deckId: deckId,
+        order: {
+          gt: 1, // Only update cards with an order greater than 1
+        },
+      },
+      data: {
+        order: {
+          decrement: 1, // Decrease the order by 1
+        },
+      },
+    });
+
+    console.log(
+        `Successfully decreased the order of ${updatedCards.count} cards in deck ${deckId}.`
+    );
+
+    return updatedCards;
+  } catch (error) {
+    console.error(`Error decreasing card orders for deck ${deckId}:`, error);
+    throw error;
+  }
+}
+
+
+async function fetchAndDeleteFirstCard(deckId) {
+  try {
+    // Find the first card in the deck (order = 1)
+    const firstCard = await prisma.deckCard.findFirst({
+      where: {
+        deckId: deckId,
+        order: 1,
+      },
+      include: {
+        card: true, // Include card details
+      },
+    });
+
+    if (!firstCard) {
+      console.log(`No cards found in deck with ID ${deckId}.`);
+      return null;
+    }
+
+    console.log('First card in the deck:', firstCard.card);
+
+    // Delete the first card from the deck
+    await prisma.deckCard.delete({
+      where: {
+        id: firstCard.id,
+      },
+    });
+
+    console.log(`First card with ID ${firstCard.cardId} removed from deck ${deckId}.`);
+    await decreaseAllCardOrders(deckId);
+    return firstCard.card;
+  } catch (error) {
+    console.error(`Error fetching and deleting the first card from deck ${deckId}:`, error);
+    throw error;
+  }
+}
+
+
+
+
+
+async function postCardIntoDeck(deckId, cardId) {
+  try {
+    // Find the maximum order in the deck
+    const maxOrderCard = await prisma.deckCard.findFirst({
+      where: { deckId: deckId },
+      orderBy: { order: 'desc' },
+    });
+
+    // Calculate the new order
+    const newOrder = maxOrderCard ? maxOrderCard.order + 1 : 1; // If no cards exist, start at 1
+
+    // Add the new card to the deck with the calculated order
+    const newDeckCard = await prisma.deckCard.create({
+      data: {
+        deckId: deckId,
+        cardId: cardId,
+        order: newOrder,
+      },
+    });
+    console.log(`Card with ID ${cardId} added to deck ${deckId} at order ${newOrder}.`);
+    return newDeckCard;
+  } catch (error) {
+    console.error(`Error adding card to deck ${deckId}:`, error);
+    throw error;
+  }
+}
+
+
+
+
+
+async function deleteDeck(deckId) {
+  try {
+    await prisma.deck.delete({
+      where: { id: deckId },
+    });
+    console.log(`Deck with ID ${deckId} deleted successfully.`);
+  } catch (error) {
+    console.error(`Error deleting deck with ID ${deckId}:`, error);
+    throw error;
+  }
+}
+
+
 
 function splitNumberIntoDigits(number) {
   return number.toString().split("").map(Number);
@@ -38,70 +172,43 @@ function splitNumberIntoDigits(number) {
 const port = process.env.Port || 3000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
 
-app.get("/api/create_random_pack", (req, res) => {
-  const shuffledDeck = { ...deck, cards: shuffle([...deck.cards]), deck_id: "0" };
-  const deckFilePath = path.join(__dirname, "jsons", `Deck_${shuffledDeck.deck_id}.json`);
-  try {
-    fs.writeFileSync(deckFilePath, JSON.stringify(shuffledDeck, null, 2));
-    res.send({ deck_id: shuffledDeck.deck_id });
-    console.log("Created random pack");
-  } catch (error) {
-    console.error("Error creating pack:", error);
-    res.status(500).send({ error: "Failed to create pack" });
-  }
+app.get("/api/create_random_pack",async  (req, res) => {
+ const deck_id= await createDeckWithRandomOrder();
+ deck_id
+  res.send(deck_id.toString());
 });
 
-app.get("/api/get_card/:id", (req, res) => {
-  const requestedId = req.params.id;
-  const deckFilePath = path.join(__dirname, "jsons", `Deck_${requestedId}.json`);
+app.get("/api/get_card/:id", async (req, res) => {
+  const deck_id = parseInt(req.params.id,10);
+    const response=await fetchAndDeleteFirstCard(deck_id);
+  res.send(response);
+});
 
-  try {
-    const deckData = JSON.parse(fs.readFileSync(deckFilePath));
-    if (deckData.cards.length === 0) {
-      console.log("Deck is empty");
-      return res.status(404).send({ error: "Deck is empty" });
-    }
-    const card = deckData.cards.shift();
-    fs.writeFileSync(deckFilePath, JSON.stringify(deckData, null, 2));
-    res.send(card);
-    console.log("Retrieved card");
-  } catch (error) {
-    console.error("Error retrieving card:", error);
-    res.status(500).send({ error: "Failed to retrieve card" });
-  }
+app.get("/api/delete_deck/:id", async (req, res) => {
+  const deck_id = parseInt(req.params.id,10);
+  const response=await deleteDeck(deck_id);
+  res.send("ok");
 });
 
 app.post("/api/post_card/:id", (req, res) => {
   const cardId = req.body.id;
-  const requestedId = req.params.id;
-  const deckFilePath = path.join(__dirname, "jsons", `Deck_${requestedId}.json`);
+  const requestedId = parseInt(req.params.id,10);
+  postCardIntoDeck(requestedId,cardId)
+  res.status(200)
 
-  try {
-    const deckData = JSON.parse(fs.readFileSync(deckFilePath));
-    const card = deck.cards.find((c) => c.id === cardId);
-    if (card) {
-      deckData.cards.push(card);
-      fs.writeFileSync(deckFilePath, JSON.stringify(deckData, null, 2));
-      res.send({ status: "ok" });
-      console.log("Posted card into pack");
-    } else {
-      res.status(404).send({ error: "Card not found" });
-    }
-  } catch (error) {
-    console.error("Error posting card:", error);
-    res.status(500).send({ error: "Failed to post card" });
-  }
 });
 
 app.post("/api/play_card", (req, res) => {
   const card1Id = splitNumberIntoDigits(req.body.id1);
   const card2Id = splitNumberIntoDigits(req.body.id2);
-  if (card1Id[0] === 4) {
+ if (card1Id[0] === card2Id[0]) {
     res.send({ status: "ok" });
-  } else if (card1Id[0] === card2Id[0]) {
-    res.send({ status: "ok" });
-  } else if (card1Id[1] === card2Id[1]) {
-    if (card2Id[0] === 7 || card2Id[0] === 1) {
+ }else if(card2Id[0]===6 && card1Id[0] === 1) {//na 1 skip jde zahrat 1
+   res.send({ status: "ok" });
+ }
+ else if (card1Id[1] === card2Id[1]) {
+   // if (card2Id[0] === 7 || card2Id[0] === 1) {
+    if (card2Id[0] === 1) {
       res.send({ status: "ko" });
     } else {
       res.send({ status: "ok" });

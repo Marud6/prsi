@@ -1,4 +1,8 @@
 const Express = require("express")();
+const cors = require("cors");
+//const app = Express();
+//app.use(cors());
+
 const Http = require("http").Server(Express);
 const Socket = require("socket.io")(Http, {
   cors: {
@@ -6,6 +10,8 @@ const Socket = require("socket.io")(Http, {
     methods: ["GET", "POST"],
   },
 });
+
+
 const data = {};
 data.winner = 404;
 data.game_started = false;
@@ -15,6 +21,11 @@ data.counter;
 data.deck_id = "404";
 data.player_on_turn = 404;
 data.last_played_card = {};
+data.to_take=0;
+
+
+
+
 
 function Create_User(username, status, card) {
   this.username = username;
@@ -32,30 +43,12 @@ function indexOfMax(arr) {
   return maxIndex;
 }
 
-async function get_cardd() {
-  const url = "http://localhost:3006/api/get_card/0";
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Response status: ${response.status}`);
-    }
-    const json = await response.json();
-    return json;
-    console.log(json);
-  } catch (error) {
-    console.error(error.message);
-  }
-}
 
 Socket.on("connection", (socket) => {
   socket.emit("data", data);
-
   socket.on("start", async () => {
     data.player_on_turn = 0;
     console.log(data.player_on_turn);
-
-    card = get_cardd();
-    console.log(card);
     data.last_played_card = {
       id: 54,
       value: 5,
@@ -66,6 +59,7 @@ Socket.on("connection", (socket) => {
     socket.emit("data", data);
     socket.broadcast.emit("data", data);
   });
+
   socket.on("logout", (user) => {
     console.log("user logout");
     data.players_names.splice(data.players_names.indexOf(user), 1);
@@ -99,8 +93,19 @@ Socket.on("connection", (socket) => {
     socket.broadcast.emit("data", data);
   });
 
+  socket.on("take_increase", () => {
+    console.log("take increase");
+    data.to_take =data.to_take+ 2;
+    socket.emit("data", data);
+    socket.broadcast.emit("data", data);
+  });
+
+
+
+
+
   socket.on("used_card", () => {
-    data.last_played_card.value = 69;
+    data.last_played_card.id +=50;
     socket.emit("data", data);
     socket.broadcast.emit("data", data);
   });

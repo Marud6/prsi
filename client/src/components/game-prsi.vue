@@ -34,12 +34,10 @@
       //set last card in websocket
 
 
-
-
-
     },
     mounted() {
       this.your_username = sessionStorage.getItem("Username");
+      console.log("mounted")
       this.socket.on("data", (data) => {
         this.numbers = data.number;
         this.users = data.players_names.length;
@@ -53,19 +51,12 @@
         }else {
           this.your_turn = false;
         }
-        if(this.your_turn && this.last_card_pl.value===1){
+        if(this.your_turn &&(this.last_card_pl.id===11 || this.last_card_pl.id===12 || this.last_card_pl.id===13 || this.last_card_pl.id===14 ) ){
           console.log("you can skip your turn button")
           this.skip=true;
         }
-        if(this.last_card_pl.value===69){
-          this.skip=false;
-          this.take_cards = false;
-          this.to_take = 0;
-        }
         if(this.last_card_pl.value===7){
-          this.to_take += 2;
-          this.last_card_pl.value=69;
-          console.log("you will take " + this.to_take)
+          console.log("you will take " + data.to_take)
           if(this.your_turn){
             this.take_cards=true;
           }
@@ -88,7 +79,6 @@
     methods: {
 
       async can_i_play(id) {
-        if(this.last_card_pl.value===69){return "ok";}
         const url = "http://localhost:3006/api/Play_card";
         try {
           const response = await fetch(url, {
@@ -108,6 +98,7 @@
 
           // Wait for the JSON response body
           const data = await response.json();
+          if(data["status"]==="ok" && id.value ===7){this.socket.emit("take_increase");}
 
           return data["status"];
 
@@ -196,8 +187,8 @@
       <h1 v-if="your_turn">ITS YOUR TURN!!</h1>
       <!-- Last Played Card in the Center -->
       <div class="last-card">
-        <!--<h3>{{ last_card_pl.id }}</h3>
-       <p>{{ last_card_pl.value }}</p>-->
+        <h3>{{ last_card_pl.id }}</h3>
+       <p>{{ last_card_pl.value }}</p>
        <img :src="'/cards/' + last_card_pl.id + '.png'" alt="Last Played Card" />
        <div class="controls">
          <button v-if="your_turn && !take_cards && !skip" @click="get_cardd()">Get Card</button>
