@@ -1,32 +1,39 @@
 <template>
   <div id="app">
-    <div v-if="!game_start">
-      <div class="start_menu" v-if="!buttonClicked">
-        <menu-1 />
-        <div class="mb-3">
-          <input class="input" v-model="username" placeholder="Enter name" />
-        </div>
-        <button class="button" @click="StartGame">Start Game</button>
-      </div>
-      <div v-if="buttonClicked">
-        <lobby-1 />
-      </div>
+    <div v-if="game_stage===4">
+      <room-menu />
     </div>
-    <div v-if="game_start ">
+
+    <div v-if="game_stage===0">
+      <menu-1 />
+      <div class="mb-3">
+        <input class="input" v-model="username" placeholder="Enter name" />
+      </div>
+      <button class="button" @click="Join_game">Start Game</button>
+    </div>
+    <div v-if="game_stage===1">
+
+      <lobby-1 />
+    </div>
+    <div v-if="game_stage===2">
       <game-1 />
     </div>
-    <div v-if="game_end">
+    <div v-if="game_stage===3">
       <end-screen />
     </div>
   </div>
 </template>
 
 <script>
+
 import GameMenu from "./components/GameMenu1.vue";
 import GameLobby from "./components/GameLobby.vue";
 import GameEndScreen from "./components/GameEndScreen.vue";
-import io from "socket.io-client";
+import RoomMenu from "./components/RoomMenu.vue";
 import GameCards from "@/components/game-prsi.vue";
+import { socket } from "@/socket";
+
+
 export default {
   name: "app",
   components: {
@@ -34,50 +41,46 @@ export default {
     "menu-1": GameMenu,
     "game-1": GameCards,
     "end-screen": GameEndScreen,
+    "room-menu":RoomMenu,
   },
   data() {
     return {
-      socket: {},
-      buttonClicked: false,
-      game_start: false,
-      game_end: false,
-
+      game_stage: 4,
       username: "",
     };
   },
   created() {
     console.log(process.env);
-    this.socket = io("http://localhost:3000");
-    this.buttonClicked = false;
-    this.game_start = false;
-    this.game_end = false;
+    socket.connect();
+    this.game_stage=4;
   },
 
   mounted() {
-    this.socket.on("data", (data) => {
+    socket.on("data", (data) => {
       console.log("communication established");
+      this.game_stage=data.game_stage;
       if (data.game_started) {
-        this.game_start = true;
+        this.game_stage=2;
       }
       if (data.winner !== 404) {
         //wait
-        this.game_end = true;
+        this.game_stage=3;
       }
     });
     window.addEventListener("unload", this.handleBeforeUnload);
   },
-
   methods: {
-    StartGame() {
+    Join_game() {
       if (this.username === "") return;
+      this.game_stage=1;
       console.log("your user name "+this.username);
-      this.socket.emit("PushUser", this.username);
+      socket.emit("PushUser", this.username);
       sessionStorage.setItem("Username", this.username);
-      this.buttonClicked = true;
     },
     handleBeforeUnload() {
       window.removeEventListener("unload", this.handleBeforeUnload);
-      this.socket.emit("logout", this.username);
+      this.game_stage=0;
+      socket.emit("logout", this.username);
     },
   },
 };

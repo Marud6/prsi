@@ -51,6 +51,11 @@ async function createDeckWithRandomOrder() {
 
 
 
+const getRandomNumber = (min, max) => {
+  return Math.round(Math.random() * (max - min) + min)
+}
+
+
 async function decreaseAllCardOrders(deckId) {
   try {
     // Decrease the order of all cards in the specified deck
@@ -143,7 +148,6 @@ async function postCardIntoDeck(deckId, cardId) {
     console.error(`Error adding card to deck ${deckId}:`, error);
   }
 }
-
 async function deleteDeck(deckId) {
   try {
     await prisma.deck.delete({
@@ -156,6 +160,62 @@ async function deleteDeck(deckId) {
   }
 }
 ////
+
+app.get("/api/create_room", async (req, res) => {
+  let rand_num;
+    rand_num= getRandomNumber(100000,999999)
+  const newRoom = await prisma.rooms.create({
+    data: {
+      room_code: rand_num,
+    },
+  });
+  res.send(rand_num.toString());
+});
+
+async function checkRoomExists(roomCode) {
+  try {
+    // Query the database to check for the room_code
+    const room = await prisma.rooms.findUnique({
+      where: {
+        room_code: roomCode, // Ensure this matches your schema field
+      },
+    });
+    // Return true if room exists, otherwise false
+    return room !== null;
+
+  } catch (error) {
+    console.error('Error checking room existence:', error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+
+app.get("/api/room_exists/:id", async (req, res) => {
+
+  const room_code = parseInt(req.params.id,10);
+  const result =await checkRoomExists(room_code)
+  res.send(result);
+});
+
+
+async function deleteroom(room_id) {
+  try {
+    await prisma.rooms.delete({
+      where: { room_code: room_id },
+    });
+    console.log(`Deck with ID ${room_id} deleted successfully.`);
+  } catch (error) {
+    console.error(`Error deleting deck with ID ${room_id}:`, error);
+
+  }
+}
+app.get("/api/delete_room/:id", async (req, res) => {
+  const room_code = parseInt(req.params.id,10);
+  deleteroom(room_code);
+  res.send("ok");
+});
 
 
 
@@ -191,8 +251,9 @@ app.post("/api/post_card/:id", (req, res) => {
   const requestedId = parseInt(req.params.id,10);
   postCardIntoDeck(requestedId,cardId)
   res.status(200)
-
 });
+
+
 app.post("/api/play_card", (req, res) => {
   const card1Id = splitNumberIntoDigits(req.body.id1);
   const card2Id = splitNumberIntoDigits(req.body.id2);

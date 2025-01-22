@@ -4,7 +4,7 @@ const cors = require("cors");
 //app.use(cors());
 
 const Http = require("http").Server(Express);
-const Socket = require("socket.io")(Http, {
+const Socket_io = require("socket.io")(Http, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
@@ -22,6 +22,7 @@ data.deck_id = "404";
 data.player_on_turn = 404;
 data.last_played_card = {};
 data.to_take=0;
+data.game_stage=4;
 
 function Create_User(username, status, card) {
   this.username = username;
@@ -37,6 +38,10 @@ function indexOfMax(arr) {
   }
   return maxIndex;
 }
+
+
+
+
 
 async function fetchData(url) {
   const apiUrl = 'http://api_server:3006/api/'+url;
@@ -55,9 +60,9 @@ async function fetchData(url) {
 }
 
 
-Socket.on("connection", (socket) => {
+Socket_io.on("connection", (socket) => {
   socket.emit("data", data);
-
+  console.log(socket.id +"  JOINED");
   async function start_game(){
     data.player_on_turn = 0;
     data.deck_id=await fetchData("create_random_pack");
@@ -71,19 +76,27 @@ Socket.on("connection", (socket) => {
 
   }
   socket.on("logout", (user) => {
-    console.log("user logout");
+    console.log(socket.id + " disconnected");
     data.players_names.splice(data.players_names.indexOf(user), 1);
     data.players_info.splice(data.players_names.indexOf(user), 1);
-    if (data.players_info.length == 0) {
-      console.log("delete deck "+data.deck_id);
-      fetchData("delete_deck/"+data.deck_id);
+    if (data.players_info.length === 0) {
+      if(data.deck_id==="404"){
+
+      }else{
+        console.log("delete deck "+data.deck_id);
+        fetchData("delete_deck/"+data.deck_id);
+      }
+      data.game_stage=4;
+     // fetchData("delete_room/"+);
       data.game_started = false;
       data.winner = 404;
     }
     socket.emit("data", data);
     socket.broadcast.emit("data", data);
   });
-  socket.on("reset_game", () => {});
+
+
+
 
   socket.on("next_turn", () => {
     if (data.player_on_turn === data.players_names.length - 1) {
@@ -108,6 +121,14 @@ Socket.on("connection", (socket) => {
     data.to_take =data.to_take+ 2;
     socket.emit("data", data);
     socket.broadcast.emit("data", data);
+  });
+
+
+  socket.on("join_room", (room_id) => {
+    socket.join(room_id)
+    console.log("socket: "+socket.id+" joined "+socket.rooms);
+    data.game_stage=0;
+    socket.emit("data", data);
   });
 
 

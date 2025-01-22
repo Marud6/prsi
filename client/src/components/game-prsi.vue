@@ -1,5 +1,5 @@
   <script>
-  import io from "socket.io-client";
+  import { socket } from "@/socket";
 
 
   export default {
@@ -8,7 +8,7 @@
     data() {
       return {
         mycards: [],
-        socket: {},
+
         deck: {},
         numbers: 0,
         index: 0,
@@ -24,7 +24,6 @@
       };
     },
     created() {
-      this.socket = io("http://localhost:3000");
       this.skip=false;
     //this.get_First_cardd();
       //set last card in websocket
@@ -35,7 +34,7 @@
     mounted() {
       this.your_username = sessionStorage.getItem("Username");
       console.log("mounted")
-      this.socket.on("data", (data) => {
+     socket.on("data", (data) => {
         this.numbers = data.number;
         this.users = data.players_names.length;
         this.users_info = data.users_info;
@@ -89,7 +88,7 @@
 
           // Wait for the JSON response body
           const data = await response.json();
-          if(data["status"]==="ok" && id.value ===7){this.socket.emit("take_increase");}
+          if(data["status"]==="ok" && id.value ===7){socket.emit("take_increase");}
 
           return data["status"];
 
@@ -100,7 +99,7 @@
 
 
   next_player_turn(){
-    this.socket.emit("next_turn");
+    socket.emit("next_turn");
   },
 
 
@@ -122,7 +121,7 @@
             }
           });
           this.mycards.splice(this.mycards.indexOf(item), 1);
-          this.socket.emit("play_card", item);
+         socket.emit("play_card", item);
           this.next_player_turn()
 
         }
@@ -131,7 +130,7 @@
       skip_turn(){
         this.skip=false
         this.next_player_turn()
-        this.socket.emit("used_card");
+       socket.emit("used_card");
 
       },
       async get_from_seven(){

@@ -1,13 +1,13 @@
 <script>
-import io from "socket.io-client";
+
+
+
+import { socket } from "@/socket";
 
 export default {
   data() {
     return {
-      socket: {},
       deck: {},
-
-
       users: [""],
       image_url: "",
       your_username: "",
@@ -16,12 +16,10 @@ export default {
       counter: 0,
     };
   },
-  created() {
-    this.socket = io("http://localhost:3000");
-  },
+
   mounted() {
     this.your_username = sessionStorage.getItem("Username");
-    this.socket.on("data", (data) => {
+    socket.on("data", (data) => {
       this.numbers = data.number;
       this.users = data.players_names.length;
       this.user_state = data.players_info;
@@ -33,13 +31,13 @@ export default {
     get_ready() {
       this.user_ready = true;
 
-      this.socket.emit("get_ready", {
+      socket.emit("get_ready", {
         username: this.your_username,
       });
     },
     get_unready() {
       this.user_ready = false;
-      this.socket.emit("get_unready", {
+      socket.emit("get_unready", {
         username: this.your_username,
       });
     },
