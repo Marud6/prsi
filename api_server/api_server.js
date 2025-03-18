@@ -1,117 +1,81 @@
 const express = require("express");
 const fs = require("fs");
-const path = require("path");
-const deck = require("./jsons/cards.json");
 const cors = require("cors");
+const jwt = require('jsonwebtoken');
+
 require("dotenv").config();
 const { PrismaClient } = require("@prisma/client");
-
 const prisma = new PrismaClient();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+const port = process.env.PORT || 3000; // Fixed environment variable casing
+app.listen(port, () => console.log(`Server running on port ${port}`));
+
+function getRandomNumber(min, max) {
+  return Math.round(Math.random() * (max - min) + min);
+}
+
+// Fisher-Yates shuffle for better randomness
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+
 async function createDeckWithRandomOrder() {
   try {
-    // Fetch all cards from the database
     const cards = await prisma.card.findMany();
+    if (cards.length !== 32) throw new Error("Deck must contain exactly 32 cards.");
 
-    if (cards.length !== 32) {
-      throw new Error("There must be exactly 32 cards in the database to create a deck.");
-    }
+    const shuffledCards = shuffleArray(cards);
 
-    // Shuffle the cards to create a random order
-    const shuffledCards = cards.sort(() => Math.random() - 0.5);
-
-    // Create a new deck
     const newDeck = await prisma.deck.create({
       data: {
         deckCards: {
           create: shuffledCards.map((card, index) => ({
             cardId: card.id,
-            order: index + 1, // Assign a unique order
+            order: index + 1,
           })),
         },
       },
-      include: {
-        deckCards: true, // Include deckCards in the response
-      },
+      include: { deckCards: true },
     });
 
-    console.log('Deck created with ID:', newDeck.id);
+    console.log("Deck created with ID:", newDeck.id);
     return newDeck.id;
   } catch (error) {
-    console.error('Error creating deck:', error);
+    console.error("Error creating deck:", error);
     throw error;
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
-
-
-const getRandomNumber = (min, max) => {
-  return Math.round(Math.random() * (max - min) + min)
-}
-
-
 async function decreaseAllCardOrders(deckId) {
   try {
-    // Decrease the order of all cards in the specified deck
-    const updatedCards = await prisma.deckCard.updateMany({
-      where: {
-        deckId: deckId,
-        order: {
-          gt: 1, // Only update cards with an order greater than 1
-        },
-      },
-      data: {
-        order: {
-          decrement: 1, // Decrease the order by 1
-        },
-      },
+    await prisma.deckCard.updateMany({
+      where: { deckId, order: { gt: 1 } },
+      data: { order: { decrement: 1 } },
     });
-
-    console.log(
-        `Successfully decreased the order of ${updatedCards.count} cards in deck ${deckId}.`
-    );
-
-    return updatedCards;
   } catch (error) {
     console.error(`Error decreasing card orders for deck ${deckId}:`, error);
   }
 }
 
-
 async function fetchAndDeleteFirstCard(deckId) {
   try {
-    // Find the first card in the deck (order = 1)
     const firstCard = await prisma.deckCard.findFirst({
-      where: {
-        deckId: deckId,
-        order: 1,
-      },
-      include: {
-        card: true, // Include card details
-      },
+      where: { deckId, order: 1 },
+      include: { card: true },
     });
 
-    if (!firstCard) {
-      console.log(`No cards found in deck with ID ${deckId}.`);
-      return null;
-    }
+    if (!firstCard) return null;
 
-    console.log('First card in the deck:', firstCard.card);
-
-    // Delete the first card from the deck
-    await prisma.deckCard.delete({
-      where: {
-        id: firstCard.id,
-      },
-    });
-
-    console.log(`First card with ID ${firstCard.cardId} removed from deck ${deckId}.`);
+    await prisma.deckCard.delete({ where: { id: firstCard.id } });
     await decreaseAllCardOrders(deckId);
     return firstCard.card;
   } catch (error) {
@@ -119,158 +83,167 @@ async function fetchAndDeleteFirstCard(deckId) {
   }
 }
 
-
-
-
-
 async function postCardIntoDeck(deckId, cardId) {
   try {
-    // Find the maximum order in the deck
     const maxOrderCard = await prisma.deckCard.findFirst({
-      where: { deckId: deckId },
-      orderBy: { order: 'desc' },
+      where: { deckId },
+      orderBy: { order: "desc" },
     });
 
-    // Calculate the new order
-    const newOrder = maxOrderCard ? maxOrderCard.order + 1 : 1; // If no cards exist, start at 1
-
-    // Add the new card to the deck with the calculated order
+    const newOrder = maxOrderCard ? maxOrderCard.order + 1 : 1;
     const newDeckCard = await prisma.deckCard.create({
-      data: {
-        deckId: deckId,
-        cardId: cardId,
-        order: newOrder,
-      },
+      data: { deckId, cardId, order: newOrder },
     });
-    console.log(`Card with ID ${cardId} added to deck ${deckId} at order ${newOrder}.`);
+
     return newDeckCard;
   } catch (error) {
     console.error(`Error adding card to deck ${deckId}:`, error);
   }
 }
+
 async function deleteDeck(deckId) {
   try {
-    await prisma.deck.delete({
-      where: { id: deckId },
-    });
+    await prisma.deck.delete({ where: { id: deckId } });
     console.log(`Deck with ID ${deckId} deleted successfully.`);
   } catch (error) {
     console.error(`Error deleting deck with ID ${deckId}:`, error);
-
   }
 }
-////
+
+async function createCardsFromFile(filePath) {
+  try {
+    const fileContent = fs.readFileSync(filePath, "utf-8");
+    const data = JSON.parse(fileContent);
+
+    for (const card of data.cards) {
+      await prisma.card.create({
+        data: { id: card.id, imageSrc: card.card_photo },
+      });
+    }
+  } catch (error) {
+    console.error("Error creating cards:", error);
+  }
+}
+
+function validate_token(req){
+  let jwtSecretKey = process.env.JWT_SECRET_KEY;
+  try {
+    const token = req.headers['authorization'];
+    const verified = jwt.verify(token, jwtSecretKey);
+    if (verified) {
+      return 1;
+    } else {
+      // Access Denied
+      return 0;
+    }
+  } catch (error) {
+    // Access Denied
+    return 0;
+  }
+
+}
+
+app.get("/api/user/generateToken", (req, res) => {
+  let jwtSecretKey = process.env.JWT_SECRET_KEY;
+  let data = {
+    time: Date(),
+    userId: 12,
+  }
+
+  const token = jwt.sign(data, jwtSecretKey);
+
+  res.send(JSON.stringify(token));
+});
 
 app.get("/api/create_room", async (req, res) => {
-  let rand_num;
-    rand_num= getRandomNumber(100000,999999)
-  const newRoom = await prisma.rooms.create({
-    data: {
-      room_code: rand_num,
-    },
-  });
-  res.send(rand_num.toString());
+  try {
+    const randNum = getRandomNumber(100000, 999999);
+    await prisma.rooms.create({ data: { room_code: randNum } });
+    res.send(randNum.toString());
+  } catch (error) {
+    res.status(500).send({ error: "Failed to create room" });
+  }
 });
 
 async function checkRoomExists(roomCode) {
-  try {
-    // Query the database to check for the room_code
-    const room = await prisma.rooms.findUnique({
-      where: {
-        room_code: roomCode, // Ensure this matches your schema field
-      },
-    });
-    // Return true if room exists, otherwise false
-    return room !== null;
-
-  } catch (error) {
-    console.error('Error checking room existence:', error);
-    throw error;
-  } finally {
-    await prisma.$disconnect();
-  }
+  return await prisma.rooms.findUnique({ where: { room_code: roomCode } }) !== null;
 }
-
 
 app.get("/api/room_exists/:id", async (req, res) => {
+ const valid= validate_token(req)
+  console.log("token valid: "+valid);
+ if(!valid){
+   res.send("error in auth :/");
+   return
+ }
 
-  const room_code = parseInt(req.params.id,10);
-  const result =await checkRoomExists(room_code)
-  res.send(result);
+
+
+
+  const roomCode = parseInt(req.params.id, 10);
+  const exists = await checkRoomExists(roomCode);
+  res.send(exists);
 });
 
-
-async function deleteroom(room_id) {
+async function deleteRoom(roomId) {
   try {
-    await prisma.rooms.delete({
-      where: { room_code: room_id },
-    });
-    console.log(`Deck with ID ${room_id} deleted successfully.`);
+    await prisma.rooms.delete({ where: { room_code: roomId } });
   } catch (error) {
-    console.error(`Error deleting deck with ID ${room_id}:`, error);
-
+    console.error(`Error deleting room with ID ${roomId}:`, error);
   }
 }
+
 app.get("/api/delete_room/:id", async (req, res) => {
-  const room_code = parseInt(req.params.id,10);
-  deleteroom(room_code);
-  res.send("ok");
+
+
+
+  await deleteRoom(parseInt(req.params.id, 10));
+  res.sendStatus(200);
 });
-
-
 
 function splitNumberIntoDigits(number) {
   return number.toString().split("").map(Number);
 }
 
-const port = process.env.Port || 3000;
-app.listen(port, () => console.log(`Server running on port ${port}`));
-
-app.get("/api/create_random_pack",async  (req, res) => {
- const deck_id= await createDeckWithRandomOrder();
-
-  res.send(deck_id.toString());
+app.get("/api/create_random_pack", async (req, res) => {
+  const deckId = await createDeckWithRandomOrder();
+  res.send(deckId.toString());
 });
 
 app.get("/api/get_card/:id", async (req, res) => {
-  const deck_id = parseInt(req.params.id,10);
-    const response=await fetchAndDeleteFirstCard(deck_id);
-  res.send(response);
+  const card = await fetchAndDeleteFirstCard(parseInt(req.params.id, 10));
+  res.send(card);
 });
 
 app.get("/api/delete_deck/:id", async (req, res) => {
-  const deck_id = parseInt(req.params.id,10);
-  const response=await deleteDeck(deck_id);
-  res.send("ok");
-});
-app.post("/api/post_card/:id", (req, res) => {
-  let cardId = req.body.id;
-  if(splitNumberIntoDigits(cardId)[0]===6){
-    cardId=cardId-50;
-  };
-  const requestedId = parseInt(req.params.id,10);
-  postCardIntoDeck(requestedId,cardId)
-  res.status(200)
+  await deleteDeck(parseInt(req.params.id, 10));
+  res.sendStatus(200);
 });
 
+app.post("/api/post_card/:id", async (req, res) => {
+  let cardId = req.body.id;
+  if (splitNumberIntoDigits(cardId)[0] === 6) {
+    cardId -= 50;
+  }
+  await postCardIntoDeck(parseInt(req.params.id, 10), cardId);
+  res.sendStatus(200);
+});
 
 app.post("/api/play_card", (req, res) => {
   const card1Id = splitNumberIntoDigits(req.body.id1);
   const card2Id = splitNumberIntoDigits(req.body.id2);
- if (card1Id[0] === card2Id[0]) {
-    res.send({ status: "ok" });
- }else if(card2Id[0]===6 && card1Id[0] === 1) {//na 1 skip jde zahrat 1
-   res.send({ status: "ok" });
- }
- else if (card1Id[1] === card2Id[1]) {
-   // if (card2Id[0] === 7 || card2Id[0] === 1) {
-    if (card2Id[0] === 1) {
-      res.send({ status: "ko" });
-    } else {
-      res.send({ status: "ok" });
-    }
-  } else {
-    res.send({ status: "ko" });
+
+  if (
+      card1Id[0] === card2Id[0] ||
+      (card2Id[0] === 6 && card1Id[0] === 1) ||
+      (req.body.id2 === card1Id[1] || card1Id[0] === 7)
+  ) {
+    return res.send({ status: "ok" });
   }
-  console.log("Played card");
+
+  if (card1Id[1] === card2Id[1] && card2Id[0] !== 1) {
+    return res.send({ status: "ok" });
+  }
+
+  res.send({ status: "ko" });
 });

@@ -3,9 +3,9 @@ version: '3.8'
 services:
   client:
     build:
-      context: ./client
+      context: ./prsi-client
     ports:
-      - "8080:8080"
+      - "8080:80"
     networks:
       - app-network
     volumes:
