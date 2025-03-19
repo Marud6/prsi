@@ -1,4 +1,6 @@
 <script>
+import { call_api } from '@/utils/apiUtils';
+
 export default {
   data() {
     return {
@@ -12,39 +14,14 @@ export default {
   methods: {
 
     async set_token(){
-        const token=await this.call_api("user/generateToken")
+        const token=await call_api("user/generateToken")
          sessionStorage.setItem("JWT_token",token );
     },
 
 
-
-    async call_api(api) {
-      const url = `http://localhost:3006/api/${api}`;
-      const token = sessionStorage.getItem("JWT_token");
-
-      try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'authorization': `${token}`, // Add JWT token to header
-          }
-        });  if (!response.ok) {
-          throw new Error(`Response status: ${response.status}`);
-        }
-        try{
-          return await response.json();
-
-        }catch{
-          return response
-        }
-
-      } catch (error) {
-        console.error(error.message);
-      }
-    },
     async Create_room() {
       this.loading = true;
-      const room_code = await this.call_api("create_room");
+      const room_code = await call_api("create_room");
       this.loading = false;
       if (room_code) {
         window.location.href = `/room/${room_code}`;
@@ -62,7 +39,7 @@ export default {
       }
 
       this.loading = true;
-      const existing = await this.call_api(`room_exists/${this.room_code}`);
+      const existing = await call_api(`room_exists/${this.room_code}`);
       this.loading = false;
       if (existing) {
         window.location.href = `/room/${this.room_code}`;

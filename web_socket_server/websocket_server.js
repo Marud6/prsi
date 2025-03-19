@@ -7,11 +7,10 @@ const Socket_io = require("socket.io")(Http, {
     methods: ["GET", "POST"],
   },
 });
-
+let token="null";
+get_token();
 // Store room-specific game data
 const Room_data = new Map();
-
-
 function createRoomData(room_code) {
   return {
     winner: "404",
@@ -33,18 +32,35 @@ function Create_User(username, status, state,cards) {
   this.cards = cards;
 }
 
-async function fetchData(url) {
-  const apiUrl = 'http://api_server:3006/api/' + url;
+async function fetchData(api) {
+  const url = `http://api_server:3006/api/${api}`;
   try {
-    const response = await fetch(apiUrl);
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status} ${apiUrl}`);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'authorization': `${token}`, // Add JWT token to header
+      }
+    });  if (!response.ok) {
+      throw new Error(`Response status: ${response.status}`);
     }
-    return await response.json()
+    try{
+      return await response.json();
+
+    }catch{
+      return response
+    }
+
   } catch (error) {
-    console.error('Error fetching data:', error);
+    console.error(error.message);
   }
 }
+async function get_token(){
+  token= await fetchData("user/generateToken")
+  console.log("got token");
+}
+
+
+
 
 Socket_io.on("connection", (socket) => {
   console.log(socket.id + " JOINED");
@@ -244,4 +260,5 @@ Socket_io.on("connection", (socket) => {
 
 Http.listen(3000, () => {
   console.log("Listening on port 3000...");
+
 });

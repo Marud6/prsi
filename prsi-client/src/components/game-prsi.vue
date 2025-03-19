@@ -1,5 +1,7 @@
   <script>
   import { socket } from "@/socket";
+  import { call_api } from '@/utils/apiUtils';
+
   export default {
     data() {
       return {
@@ -152,6 +154,9 @@
         this.next_player_turn()
       },
       async get_cardd(){
+
+
+
         const url = "http://localhost:3006/api/get_card/"+this.deck_id;
         try {
           const response = await fetch(url);

@@ -141,7 +141,7 @@ function validateToken(req, res, next) {
     res.status(403).send("Access Denied: Invalid Token!");
   }
 }
-
+//
 app.get("/api/user/generateToken", (req, res) => {
   let jwtSecretKey = process.env.JWT_SECRET_KEY;
   let data = {

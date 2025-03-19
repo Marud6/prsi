@@ -2,7 +2,6 @@
 import { socket } from "@/socket";
 import GameCards from "@/components/game-prsi.vue";
 
-
 export default {
 
   components: {

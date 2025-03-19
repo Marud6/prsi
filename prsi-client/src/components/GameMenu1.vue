@@ -1,6 +1,4 @@
 <script>
-import {socket} from "@/socket.js";
-
 export default {
   data() {
     return {
