@@ -125,22 +125,21 @@ async function createCardsFromFile(filePath) {
   }
 }
 
-function validate_token(req){
-  let jwtSecretKey = process.env.JWT_SECRET_KEY;
-  try {
-    const token = req.headers['authorization'];
-    const verified = jwt.verify(token, jwtSecretKey);
-    if (verified) {
-      return 1;
-    } else {
-      // Access Denied
-      return 0;
-    }
-  } catch (error) {
-    // Access Denied
-    return 0;
+function validateToken(req, res, next) {
+  const jwtSecretKey = process.env.JWT_SECRET_KEY;
+  const token = req.headers['authorization'];
+
+  if (!token) {
+    return res.status(403).send("Access Denied: No Token Provided!");
   }
 
+  try {
+    const verified = jwt.verify(token, jwtSecretKey);
+    req.user = verified;
+    next();
+  } catch (error) {
+    res.status(403).send("Access Denied: Invalid Token!");
+  }
 }
 
 app.get("/api/user/generateToken", (req, res) => {
@@ -169,13 +168,7 @@ async function checkRoomExists(roomCode) {
   return await prisma.rooms.findUnique({ where: { room_code: roomCode } }) !== null;
 }
 
-app.get("/api/room_exists/:id", async (req, res) => {
- const valid= validate_token(req)
-  console.log("token valid: "+valid);
- if(!valid){
-   res.send("error in auth :/");
-   return
- }
+  app.get("/api/room_exists/:id", validateToken, async (req, res) => {
 
 
 
