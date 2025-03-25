@@ -12,9 +12,6 @@ const router = createRouter({
       component: RoomMenu,
     },
     {
-     path: '/room/:id', component: Menu
-    },
-    {
       path: '/lobby/:id/', component: lobby
     },
   ],

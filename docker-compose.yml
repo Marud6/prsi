@@ -35,7 +35,6 @@ services:
       - ./web_socket_server:/usr/src/app
     environment:
       - NODE_ENV=production
-
   db:
     image: mysql
     restart: always
@@ -43,9 +42,10 @@ services:
       MYSQL_ROOT_PASSWORD: example
     ports:
       - "3306:3306"
+    volumes:
+      - /opt/mysql_data:/var/lib/mysql
     networks:
       - app-network
-
 
 networks:
   app-network:

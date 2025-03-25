@@ -18,7 +18,6 @@ function getRandomNumber(min, max) {
   return Math.round(Math.random() * (max - min) + min);
 }
 
-// Fisher-Yates shuffle for better randomness
 function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -124,11 +123,11 @@ async function createCardsFromFile(filePath) {
     console.error("Error creating cards:", error);
   }
 }
+//
 
 function validateToken(req, res, next) {
   const jwtSecretKey = process.env.JWT_SECRET_KEY;
   const token = req.headers['authorization'];
-
   if (!token) {
     return res.status(403).send("Access Denied: No Token Provided!");
   }
@@ -136,6 +135,7 @@ function validateToken(req, res, next) {
   try {
     const verified = jwt.verify(token, jwtSecretKey);
     req.user = verified;
+    console.log("token ok")
     next();
   } catch (error) {
     res.status(403).send("Access Denied: Invalid Token!");
@@ -155,11 +155,15 @@ app.get("/api/user/generateToken", (req, res) => {
 });
 
 app.get("/api/create_room", async (req, res) => {
+  console.log("cretea room");
   try {
     const randNum = getRandomNumber(100000, 999999);
+    console.log(randNum);
     await prisma.rooms.create({ data: { room_code: randNum } });
+    console.log("added");
     res.send(randNum.toString());
   } catch (error) {
+    console.log(error);
     res.status(500).send({ error: "Failed to create room" });
   }
 });
@@ -169,10 +173,6 @@ async function checkRoomExists(roomCode) {
 }
 
   app.get("/api/room_exists/:id", validateToken, async (req, res) => {
-
-
-
-
   const roomCode = parseInt(req.params.id, 10);
   const exists = await checkRoomExists(roomCode);
   res.send(exists);
