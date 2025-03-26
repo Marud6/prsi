@@ -1,4 +1,6 @@
 <script >
+
+
 </script>
 
 <template>
@@ -10,6 +12,5 @@
 body{
   background-image: url("/images/table.jpg");
   background-size: cover;
-
 }
 </style>

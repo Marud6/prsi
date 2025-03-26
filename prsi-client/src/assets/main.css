@@ -1,22 +1,22 @@
 @import './base.css';
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
-}
 
 
 .back_card{
   position: fixed;
-  width: 15%;
-  bottom: 58%;
+  width: 18%;
+  bottom: 50%;
   transform: rotate(90deg);
+  filter: blur(2px)
+  
+
 }
 .front_card{
   position: fixed;
   width: 12%;
+  filter: blur(2px)
+
+
 }
 img{
   -webkit-user-select: none; /* Safari */
@@ -28,20 +28,4 @@ img{
 
 
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
-}
 
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
-
-  #app {
-    display: grid;
-    padding: 0 2rem;
-  }
-}

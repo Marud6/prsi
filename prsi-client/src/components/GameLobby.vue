@@ -1,10 +1,12 @@
 <script>
 import { socket } from "@/socket";
 import GameCards from "@/components/game-prsi.vue";
+import Background from "@/components/background.vue";
 
 export default {
 
   components: {
+    Background,
     "game-prsi": GameCards,
   },
 
@@ -76,79 +78,141 @@ export default {
   </div >
   <div v-if="users !==404" >
   <div v-if="game_started===false">
-    <div class="left">
-      <ul id="example-1">
-        <li v-for="item in user_state" :key="item">
-          <div v-if="item.state==='online'" class="user">
-            <h1 class="item" ref="number">{{ item["username"] }} is sdafd </h1><h1 v-if="item['status']==='Not ready'" style="color: red" class="item">{{ item["status"] }}</h1><h1 v-if="item['status']==='Ready'"   style="color: green" class="item">{{ item["status"] }}</h1>
-          </div>
-        </li>
-      </ul>
-    </div>
-    <div class="right">
-      <h1 class="text1">Game Lobby</h1>
-      <h1 class="text2">Your room code is {{ $route.params.id }}</h1>
 
-      <h1 class="text2">Your username is {{ your_username }}</h1>
-      <!-- <h1 ref="number">there are {{ users }} users</h1> -->
+    <div class="buttons">
+      <div class="text_container">
+      <h1 class="text">Lobby</h1>
+      </div>
+      <ul class="cards">
+          <li v-for="item in user_state" :key="item">
+            <div v-if="item.state==='online'" class="user">
+              <div class="card">
+                <h1 class="username_text">{{ item["username"] }}</h1>
+                <img v-if="item['status']==='Not ready'" class="player_image" src="/images/player_notready.png" alt="">
+                <img v-if="item['status']==='Ready'" class="player_image" src="/images/player_ready.png" alt="">
+                <h1 v-if="item['status']==='Not ready'" style="color: red" class="item">{{ item["status"] }}</h1>
+                <h1 v-if="item['status']==='Ready'" style="color: green" class="item">{{ item["status"] }}</h1>
+              </div>
+            </div>
+          </li>
+        </ul>
+      <div class="ready_container">
+        <h1 class="text2">Your room code is {{ $route.params.id }}</h1>
 
-      <h1 class="users_count">there are: {{ users }} users online</h1>
-      <div v-if="!user_ready">
+      </div>
+      <div v-if="!user_ready" class="ready_container">
         <button class="button" @click="get_ready()">Get ready</button>
       </div>
-      <div v-if="user_ready">
+      <div v-if="user_ready" class="ready_container">
         <button class="button" @click="get_unready()">Get unready</button>
       </div>
       <h1 class="counter">{{ counter }}</h1>
     </div>
+    <background></background>
   </div>
   <div v-if="game_started===true">
     <game-prsi />
 
-
-
-
   </div>
   </div>
-
-
-
 
 </template>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+.text_container{
+  padding: 2%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
 
-ul{
-  width: 300px;
-   box-sizing: content-box;
+.ready_container{
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 1%;
 
 }
 
-.item{
-  color: black;
-  padding: 8px;
+.text{
+  text-align: center;
+  width: 100%;
+  font-size: 4rem;
+  background: rgba(217, 217, 217, 0.75); /* 75% transparent */
+  height: 100px;
+  width: 500px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 16px;
+  border: none;
 }
-
-
-.left {
-  width: 30%;
-  float: left;
-}
-.text1 {
+.text2{
   color: white;
-  font-size: 80px;
-  margin: 10px;
-  margin-bottom: 50px;
-  text-shadow: 2px 4px 3px rgba(0, 0, 0, 0.4);
+  font-size: 2rem;
 }
-.users_count {
-  font-size: 25px;
-  margin-bottom: 50px;
+
+.button{
+  background: rgba(217, 217, 217, 0.75); /* 75% transparent */
+  height: 100px;
+  width: 500px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 16px;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  font-size: 3rem;
 }
-.button {
-  font-size: 35px;
+
+.button:hover{
+  background: rgba(217, 217, 217, 0.85); /* 75% transparent */
+  transform: scale(1.1);
 }
+
+
+
+
+.buttons{
+  position: absolute;
+  z-index: 1000;
+  width: 100%;
+}
+card{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; /* Centers content vertically */
+  width: 200px; /* Adjust width as needed */
+  padding: 20px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  position: relative;
+}
+.username_text{
+
+}
+
+.item {
+
+}
+
+
+.cards{
+  display: flex;
+}
+
+
+.player_image{
+  width: 100%;
+}
+
+
+
 li {
   list-style-type: none;
   margin: 0;
@@ -164,10 +228,4 @@ li {
   width: 100%;
 }
 
-.right {
-  width: 60%;
-  float: right;
-  color: white;
-  text-align: center;
-}
 </style>

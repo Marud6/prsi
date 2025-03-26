@@ -14,7 +14,6 @@ RUN npm install -g nodemon
 
 # Copy the rest of the application code
 COPY . .
-RUN npx prisma generate
 # Expose the application port
 EXPOSE 3006
 

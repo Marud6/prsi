@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
 import RoomMenu from "../components/RoomMenu.vue";
-import Menu from "../components/GameMenu1.vue";
 import lobby from "../components/GameLobby.vue";
 
 const router = createRouter({

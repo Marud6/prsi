@@ -123,7 +123,7 @@ async function createCardsFromFile(filePath) {
     console.error("Error creating cards:", error);
   }
 }
-//
+//createCardsFromFile("jsons/cards.json")//
 
 function validateToken(req, res, next) {
   const jwtSecretKey = process.env.JWT_SECRET_KEY;

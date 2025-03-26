@@ -95,14 +95,14 @@ Socket_io.on("connection", (socket) => {
     data.deck_id = await fetchData("create_random_pack");
     console.log("Deck ID:", data.deck_id);
     data.last_played_card = await fetchData("get_card/" + data.deck_id);
-
+    console.log("last card: "+data.last_played_card.id);
+    if (data.last_played_card.id===11||data.last_played_card.id===12||data.last_played_card.id===13||data.last_played_card.id===14) {data.last_played_card.id=data.last_played_card.id+50}
     for (const item of data.players_info) {
       for (let i = 0; i < 4; i++) {
         const card = await fetchData("get_card/" + data.deck_id);
        item.cards.push(card);
       }
     }
-
     console.log("Starting game...");
     Socket_io.to(room_id).emit("data", data);
   }
