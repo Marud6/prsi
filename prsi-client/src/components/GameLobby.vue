@@ -2,6 +2,8 @@
 import { socket } from "@/socket";
 import GameCards from "@/components/game-prsi.vue";
 import Background from "@/components/background.vue";
+import { call_api } from '@/utils/apiUtils';
+
 
 export default {
 
@@ -9,7 +11,6 @@ export default {
     Background,
     "game-prsi": GameCards,
   },
-
   data() {
     return {
       deck: {},
@@ -21,6 +22,7 @@ export default {
       counter: "",
       room_code: 404,
       game_started: false,
+      winner:false,
     };
   },
   created() {
@@ -31,18 +33,24 @@ export default {
       window.location.href = "/room/"+this.$route.params.id;
       return;
     }
-    socket.emit("join_room", this.room_code, this.your_username );
+    if(!this.game_started){
+      socket.emit("join_room", this.room_code, this.your_username );
+
+
+    }
   },
   mounted() {
     socket.on("counter", (counter) => {
       this.counter = counter;
+    });
+    socket.on("winner", () => {
+      this.winner = true;
     });
     socket.on("player_joined_game", (players_info,game_start) => {
       if(players_info==null){
         window.location.href = "/";
         return;
       }
-
         this.users = players_info.length;
       this.user_state = players_info;
       if(game_start!==undefined){
@@ -73,6 +81,7 @@ export default {
 
 <template>
 
+  <div v-if="!winner">
   <div v-if="users ===404" >
     <h1>Loading</h1>
   </div >
@@ -112,9 +121,22 @@ export default {
   </div>
   <div v-if="game_started===true">
     <game-prsi />
+  </div>
+  </div>
+  </div>
+  <div v-if="winner">
+    <div class="buttons">
+    <div class="text_container">
+      <h1 class="winner_text">you won</h1>
+
+    </div>
+      <a href="/">Back home</a>
+    </div>
+
+    <background></background>
 
   </div>
-  </div>
+
 
 </template>
 
@@ -135,7 +157,9 @@ export default {
 
 }
 
-.text{
+
+
+.text,.winner_text{
   text-align: center;
   width: 100%;
   font-size: 4rem;
@@ -148,6 +172,15 @@ export default {
   border-radius: 16px;
   border: none;
 }
+.winner_text{
+  font-size: 80px;
+width: 600px;
+  height: 150px;
+}
+
+
+
+
 .text2{
   color: white;
   font-size: 2rem;
@@ -173,8 +206,6 @@ export default {
 }
 
 
-
-
 .buttons{
   position: absolute;
   z-index: 1000;
@@ -193,25 +224,24 @@ card{
   text-align: center;
   position: relative;
 }
+
 .username_text{
-
+position: absolute;
+  width: 273px;
+  font-size: 22px;
 }
-
 .item {
-
+  position: absolute;
+  top: 55%;
+  width: 273px;
 }
-
-
 .cards{
   display: flex;
 }
 
-
 .player_image{
   width: 100%;
 }
-
-
 
 li {
   list-style-type: none;
@@ -221,8 +251,6 @@ li {
 }
 
 .user {
-  background-color: aliceblue;
-  border-radius: 10px;
   font-size: 15px;
   text-align: center;
   width: 100%;

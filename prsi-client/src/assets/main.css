@@ -15,8 +15,6 @@
   position: fixed;
   width: 12%;
   filter: blur(2px)
-
-
 }
 img{
   -webkit-user-select: none; /* Safari */
@@ -24,7 +22,20 @@ img{
   user-select: none; /* Standard syntax */
 }
 
+@font-face {
+  font-family: 'KiwiMaru';
+  src: url('@/assets/KiwiMaru.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
 
+h1{
+  font-family: 'KiwiMaru';
+}
+h2{
+  font-family: 'KiwiMaru';
+
+}
 
 
 

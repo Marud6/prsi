@@ -123,11 +123,6 @@
               "Content-type": "application/json; charset=UTF-8"
             }
           });
-          //this.mycards.splice(this.mycards.indexOf(item), 1);
-          if(this.mycards.length===0){
-            socket.emit("game_end",this.room_code);
-
-          }
          socket.emit("play_card",this.room_code, item,this.your_username);
           this.next_player_turn()
 
@@ -135,28 +130,31 @@
       },
       skip_turn(){
         this.skip=false
-        this.next_player_turn()
        socket.emit("used_card",this.room_code);
-
-      },
-      take_card(){
-        this.get_cardd()
         this.next_player_turn()
-
       },
-      async get_from_seven(){
-        this.take_cards=false;
-        console.log(this.to_take+"cards to take")
-        for (let i = 0; i <= this.to_take; i++) {
-          await this.get_cardd();
+      async take_card(){
+        if(this.your_turn && !this.take_cards && !this.skip){
+          await this.get_cardd()
+          this.next_player_turn()
         }
-        socket.emit("used_card",this.room_code);
-        this.next_player_turn()
+        if(this.your_turn && this.take_cards){
+
+          this.take_cards=false;
+          for (let i = 0; i < this.to_take; i++) {
+            await this.get_cardd();
+          }
+          socket.emit("used_card",this.room_code);
+          this.next_player_turn()
+        }
+        return 0;
+
+
+
+
       },
+
       async get_cardd(){
-
-
-
         const url = "http://localhost:3006/api/get_card/"+this.deck_id;
         try {
           const response = await fetch(url);
@@ -172,29 +170,31 @@
           console.error(error.message);
         }
       }
-
-
-
     },
   };
   </script>
 
   <template>
     <div class="game-container">
-      <h1 v-if="your_turn">ITS YOUR TURN!!</h1>
-      <!-- Last Played Card in the Center -->
+      <div class="controls">
+        <button v-if="your_turn && skip" @click="skip_turn()">Skip Turn</button>
+      </div>
+      <div class="container_deck_take">
+        <img id="img1" class="take_img" src="/images/back.png" alt="back of the card">
+        <img id="img2" class="take_img" src="/images/back.png" alt="back of the card">
+        <img id="img3" class="take_img" src="/images/back.png" alt="back of the card">
+        <img id="img4" class="take_img" src="/images/back.png" alt="back of the card">
+        <img id="img5" class="take_img" @click="take_card()" src="/images/back.png" alt="back of the card">
+      </div>
       <div class="last-card">
-        <h3>{{ last_card_pl.id }}</h3>
-       <p>{{ last_card_pl.value }}</p>
-       <img :src="'/cards/' + last_card_pl.id + '.png'" alt="Last Played Card" />
-       <div class="controls">
-         <button v-if="your_turn && !take_cards && !skip" @click="take_card()">Get Card</button>
-         <button v-if="your_turn && take_cards" @click="get_from_seven()">Get {{this.to_take}} Cards</button>
-         <button v-if="your_turn && skip" @click="skip_turn()">Skip Turn</button>
-       </div>
+       <img :src="'/cards/' + last_card_pl.id + '.png'" class="last_played_card" alt="Last Played Card" />
      </div>
+      <div class="enemies_cards">
 
-     <!-- Your Cards at the Bottom -->
+
+      </div>
+      <h1 v-if="your_turn">ITS YOUR TURN!!</h1>
+
       <div class="my-cards">
         <div
             v-for="item in mycards"
@@ -202,10 +202,9 @@
             class="card"
             @click="your_turn && handleClick(item)"
         >
-          <img :src="'/cards/' + item.id + '.png'" alt="My Card" />
+          <img :src="'/cards/' + item.id + '.png'" class="player_cards" alt="My Card" />
         </div>
       </div>
-
       <!-- Game Controls -->
 
     </div>
@@ -214,6 +213,77 @@
 
 
   <style scoped>
+  h1{
+    padding-top: 25%;
+    font-size: 48px;
+    width: 100%;
+    text-align: center;
+  }
+  .take_img{
+    position: absolute;
+   height: 300px;
+  }
+  #img1{
+    transform: rotate(4deg);
+  }
+  #img2{
+    transform: rotate(-8deg);
+  }
+  #img3{
+    transform: rotate(12deg);
+  }
+  #img4{
+    transform: rotate(5deg);
+  }
+  #img5{
+    rotate: -11deg;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+  }
+  .container_deck_take{
+    position: absolute;
+    top: 20%;
+    left: 60%;
+    z-index: 1000;
+
+  }
+  #img5:hover{
+transform: scale(1.05);
+  }
+
+  .player_cards, .last_played_card{
+    height: 250px;
+  }
+  .last_played_card{
+    position: absolute;
+    top: 23%;
+    left:45%;
+  }
+  .player_cards {
+    position: relative;
+    overflow: visible;
+  }
+
+  .my-cards {
+    display: flex;
+    flex-wrap: nowrap;
+  }
+
+  .my-cards > * {
+    max-width: 150px;
+    flex-shrink: 0;
+    margin-right: -50px;
+    transition:  transform 0.3s ease;
+    position: relative;
+  }
+
+
+  .my-cards > *:hover {
+    transform: translateY(-20px);
+    z-index: 10;
+  }
+
+
+
   .game-container {
     position: relative;
     height: 100vh;
@@ -224,52 +294,15 @@
     padding: 16px;
   }
 
-  .last-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: absolute;
-    top: 40%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-  }
 
-  .last-card img {
-    height: 200px;
-    width: auto;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  }
+
   h1{
     color: white;
   }
 
-  .my-cards {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    position: absolute;
-    top: 60%;
-  }
 
-  .card {
-    cursor: pointer;
-    transform: scale(1);
-    transition: transform 0.2s ease-in-out;
-  }
 
-  .card:hover {
-    transform: scale(1.1);
-  }
 
-  .card img {
-    height: 200px;
-    border-radius: 4px;
-  }
 
   .controls {
     margin-top: 20px;

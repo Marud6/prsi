@@ -123,7 +123,7 @@ async function createCardsFromFile(filePath) {
     console.error("Error creating cards:", error);
   }
 }
-//createCardsFromFile("jsons/cards.json")//
+//createCardsFromFile("jsons/cards.json")///
 
 function validateToken(req, res, next) {
   const jwtSecretKey = process.env.JWT_SECRET_KEY;
@@ -131,7 +131,6 @@ function validateToken(req, res, next) {
   if (!token) {
     return res.status(403).send("Access Denied: No Token Provided!");
   }
-
   try {
     const verified = jwt.verify(token, jwtSecretKey);
     req.user = verified;
@@ -143,6 +142,7 @@ function validateToken(req, res, next) {
 }
 //
 app.get("/api/user/generateToken", (req, res) => {
+  console.log("generate token")
   let jwtSecretKey = process.env.JWT_SECRET_KEY;
   let data = {
     time: Date(),
@@ -155,12 +155,11 @@ app.get("/api/user/generateToken", (req, res) => {
 });
 
 app.get("/api/create_room", async (req, res) => {
-  console.log("cretea room");
   try {
+    console.log("create room")
+
     const randNum = getRandomNumber(100000, 999999);
-    console.log(randNum);
     await prisma.rooms.create({ data: { room_code: randNum } });
-    console.log("added");
     res.send(randNum.toString());
   } catch (error) {
     console.log(error);
@@ -171,10 +170,13 @@ app.get("/api/create_room", async (req, res) => {
 async function checkRoomExists(roomCode) {
   return await prisma.rooms.findUnique({ where: { room_code: roomCode } }) !== null;
 }
-
+//
   app.get("/api/room_exists/:id", validateToken, async (req, res) => {
-  const roomCode = parseInt(req.params.id, 10);
-  const exists = await checkRoomExists(roomCode);
+
+    const roomCode = parseInt(req.params.id, 10);
+    console.log("room exists "+ roomCode)
+
+    const exists = await checkRoomExists(roomCode);
   res.send(exists);
 });
 
@@ -187,6 +189,7 @@ async function deleteRoom(roomId) {
 }
 
 app.get("/api/delete_room/:id", async (req, res) => {
+  console.log("delete room  "+ req.params.id)
 
 
 
@@ -199,21 +202,29 @@ function splitNumberIntoDigits(number) {
 }
 
 app.get("/api/create_random_pack", async (req, res) => {
+  console.log("create random pack ")
+
   const deckId = await createDeckWithRandomOrder();
   res.send(deckId.toString());
 });
 
 app.get("/api/get_card/:id", async (req, res) => {
+  console.log("get card ")
+
   const card = await fetchAndDeleteFirstCard(parseInt(req.params.id, 10));
   res.send(card);
 });
 
 app.get("/api/delete_deck/:id", async (req, res) => {
+  console.log("delete deck ")
+
   await deleteDeck(parseInt(req.params.id, 10));
   res.sendStatus(200);
 });
 
 app.post("/api/post_card/:id", async (req, res) => {
+  console.log("post card ")
+
   let cardId = req.body.id;
   if (splitNumberIntoDigits(cardId)[0] === 6) {
     cardId -= 50;
@@ -223,6 +234,8 @@ app.post("/api/post_card/:id", async (req, res) => {
 });
 
 app.post("/api/play_card", (req, res) => {
+  console.log("play card ")
+
   const card1Id = splitNumberIntoDigits(req.body.id1);
   const card2Id = splitNumberIntoDigits(req.body.id2);
 

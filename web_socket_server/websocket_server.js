@@ -106,8 +106,6 @@ Socket_io.on("connection", (socket) => {
     console.log("Starting game...");
     Socket_io.to(room_id).emit("data", data);
   }
-
-
   socket.on("user_got_card", (room_id,json,user) => {
     const data = Room_data.get(room_id);
     if (!data) return;
@@ -115,7 +113,6 @@ Socket_io.on("connection", (socket) => {
     data.players_info[index].cards.push(json);
     socket.emit("update_players", data.players_info[index].cards);
   });
-
   socket.on("next_turn", (room_id) => {
     const data = Room_data.get(room_id);
     if (!data) return;
@@ -128,11 +125,21 @@ Socket_io.on("connection", (socket) => {
     if (!data) return;
     const user_index = data.players_info.findIndex(item => item.username === username);
     const index = data.players_info[user_index].cards.findIndex(item => item.id === card.id);
+
+
     if (index !== -1) {
       data.players_info[user_index].cards.splice(index, 1);
     }
-    data.last_played_card = card;
 
+    console.log(data.players_info[user_index].cards.length)
+
+    if(data.players_info[user_index].cards.length===0){
+      socket.emit("winner")
+    }
+    if(data.players_info[user_index].length===0){
+      console.log("PLAYER "+data.players_info[user_index].name+" WON THE GAME!!")
+    }
+    data.last_played_card = card;
     Socket_io.to(room_id).emit("data", data);
   });
 
@@ -143,12 +150,6 @@ Socket_io.on("connection", (socket) => {
     Socket_io.to(room_id).emit("to_take_increase", data.to_take);
   });
 
-  socket.on("game_end", (room_id) => {
-    const data = Room_data.get(room_id);
-    if (!data) return;
-    data.winner = socket.name;
-    Socket_io.to(room_id).emit("data", data);
-  });
 
   socket.on("get_ready", async (room_id, user) => {
     const data = Room_data.get(room_id);
@@ -193,6 +194,7 @@ Socket_io.on("connection", (socket) => {
   });
 
   socket.on("logout",async (room_id, user) => {
+    console.log("socket left")
 
     const data = Room_data.get(room_id);
     if (!data){
@@ -241,12 +243,9 @@ Socket_io.on("connection", (socket) => {
     }
   });
 
-
-
   socket.on("used_card", (room_id) => {
     const data = Room_data.get(room_id);
     if (!data) return;
-
     if((data.last_played_card.id===71 || data.last_played_card.id===72 || data.last_played_card.id===73 || data.last_played_card.id===74)&&data.last_played_card.id !== undefined){
       data.last_played_card.id= data.last_played_card.id-70;
       data.to_take=0;

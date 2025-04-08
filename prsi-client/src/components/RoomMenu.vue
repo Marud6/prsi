@@ -1,6 +1,7 @@
 <script>
 import { call_api } from '@/utils/apiUtils';
 import Background from "@/components/background.vue";
+import {socket} from "@/socket.js";
 
 export default {
   components: {Background},
@@ -29,6 +30,7 @@ export default {
     },
 
 
+
     async Create_room() {
       this.loading = true;
       this.room_code = await call_api("create_room");
@@ -49,7 +51,6 @@ export default {
         alert(`Invalid room code.`);
         return;
       }
-
       this.loading = true;
       const existing = await call_api(`room_exists/${this.room_code}`);
       this.loading = false;
@@ -104,6 +105,7 @@ export default {
 
 
 
+
 .input{
   background-color: transparent;
   border: none;
@@ -112,12 +114,14 @@ export default {
   outline: none;
 }
 h2{
+  font-family: 'KiwiMaru', sans-serif;
+
   color:black;
   text-align: center;
   -webkit-user-select: none; /* Safari */
   -ms-user-select: none; /* IE 10 and IE 11 */
   user-select: none; /* Standard syntax */
-  font-size: min(5vw,3rem);
+  font-size: 3rem;
 }
 .game_buttons {
   position: absolute; /* Position over other elements */
@@ -146,7 +150,7 @@ h2{
 .button,.button_static {
   background: rgba(217, 217, 217, 0.75); /* 75% transparent */
   height: 100px;
-  width: 500px;
+  width: 600px;
   display: flex;
   justify-content: center;
   align-items: center;
