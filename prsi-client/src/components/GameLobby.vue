@@ -6,7 +6,6 @@ import { call_api } from '@/utils/apiUtils';
 
 
 export default {
-
   components: {
     Background,
     "game-prsi": GameCards,
@@ -27,16 +26,16 @@ export default {
   },
   created() {
     this.room_code = this.$route.params.id;
+    this.exits()
     this.your_username = sessionStorage.getItem("Username")
-    console.log(this.your_username+" Join game");
+    console.log(this.your_username+"Join game");
     if(this.your_username===null){
       window.location.href = "/room/"+this.$route.params.id;
       return;
     }
     if(!this.game_started){
+      console.log("joined game")
       socket.emit("join_room", this.room_code, this.your_username );
-
-
     }
   },
   mounted() {
@@ -51,16 +50,21 @@ export default {
         window.location.href = "/";
         return;
       }
-        this.users = players_info.length;
+      this.users = players_info.length;
       this.user_state = players_info;
       if(game_start!==undefined){
         this.game_started = game_start;
       }
     });
-
     window.addEventListener("unload", this.handleBeforeUnload);
   },
   methods: {
+   async exits(){
+      const existing = await call_api(`room_exists/${this.room_code}`);
+      if(!existing){
+        window.location.href = "/";
+      }
+    },
     get_ready() {
       this.user_ready = true;
       socket.emit("get_ready", this.room_code, this.your_username );
@@ -68,7 +72,6 @@ export default {
     get_unready() {
       this.user_ready = false;
       socket.emit("get_unready", this.room_code, this.your_username );
-
     },
     handleBeforeUnload() {
       window.removeEventListener("unload", this.handleBeforeUnload);
@@ -107,7 +110,6 @@ export default {
         </ul>
       <div class="ready_container">
         <h1 class="text2">Your room code is {{ $route.params.id }}</h1>
-
       </div>
       <div v-if="!user_ready" class="ready_container">
         <button class="button" @click="get_ready()">Get ready</button>
@@ -128,19 +130,13 @@ export default {
     <div class="buttons">
     <div class="text_container">
       <h1 class="winner_text">you won</h1>
-
     </div>
       <a href="/">Back home</a>
     </div>
-
     <background></background>
-
   </div>
-
-
 </template>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 .text_container{
   padding: 2%;
@@ -148,7 +144,6 @@ export default {
   display: flex;
   justify-content: center;
 }
-
 .ready_container{
   width: 100%;
   display: flex;
